@@ -17,4 +17,4 @@ export class Task {
   description: string;
 }
 
-export const ColumnSchema = SchemaFactory.createForClass(Task);
+export const TaskSchema = SchemaFactory.createForClass(Task);

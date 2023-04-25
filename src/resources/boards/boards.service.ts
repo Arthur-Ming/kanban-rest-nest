@@ -1,26 +1,63 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateBoardDto } from './dto/create-board.dto';
 import { UpdateBoardDto } from './dto/update-board.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Board } from './schemas/board.schema';
+import { FindOneDto } from './dto/find-one.dto';
+import { Column } from '../columns/schemas/column.schema';
+import { Task } from '../tasks/schemas/task.schema';
 
 @Injectable()
 export class BoardsService {
-  create(createBoardDto: CreateBoardDto) {
-    return 'This action adds a new board';
+  constructor(
+    @InjectModel(Board.name) private boardModel: Model<Board>,
+    @InjectModel(Column.name) private columnModel: Model<Column>,
+    @InjectModel(Task.name) private taskModel: Model<Task>
+  ) {}
+
+  async create(createBoardDto: CreateBoardDto) {
+    return await this.boardModel.create(createBoardDto);
   }
 
-  findAll() {
-    return `This action returns all boards`;
+  async findAll() {
+    return await this.boardModel.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} board`;
+  async findOne({ id }: FindOneDto) {
+    const board = await this.boardModel.findById(id).populate({
+      path: 'columns',
+      populate: {
+        path: 'tasks',
+      },
+    });
+    if (!board) {
+      throw new NotFoundException();
+    }
+    return board;
   }
 
-  update(id: number, updateBoardDto: UpdateBoardDto) {
-    return `This action updates a #${id} board`;
+  async update({ id }: FindOneDto, updateBoardDto: UpdateBoardDto) {
+    const board = await this.boardModel.findByIdAndUpdate(id, updateBoardDto, {
+      new: true,
+    });
+    if (!board) {
+      throw new NotFoundException();
+    }
+    return board;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} board`;
+  async remove({ id }: FindOneDto) {
+    const [board] = await Promise.all([
+      this.boardModel.findByIdAndDelete(id),
+      this.columnModel.deleteMany({ boardId: id }),
+      this.taskModel.deleteMany({ boardId: id }),
+    ]);
+
+    if (!board) {
+      throw new NotFoundException();
+    }
+
+    return board;
   }
 }
