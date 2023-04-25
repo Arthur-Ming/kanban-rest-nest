@@ -4,6 +4,7 @@ import config from './config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BoardsModule } from './resources/boards/boards.module';
 import { ColumnsModule } from './resources/columns/columns.module';
+import { TasksModule } from './resources/tasks/tasks.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ColumnsModule } from './resources/columns/columns.module';
     }),
     BoardsModule,
     ColumnsModule,
+    TasksModule,
   ],
 })
 export class AppModule {}
