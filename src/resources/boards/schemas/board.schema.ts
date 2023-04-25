@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { ObjectId } from 'mongoose';
+import mongoose from 'mongoose';
+import { Column } from 'src/resources/columns/schemas/column.schema';
 import schemaOptions from 'src/utils/schemaOptions';
 
 @Schema(schemaOptions())
@@ -11,7 +12,7 @@ export class Board {
   description: string;
 
   @Prop([{ type: mongoose.Schema.Types.ObjectId, ref: 'Column' }])
-  columns: ObjectId[];
+  columns: Column[];
 }
 
 export const BoardSchema = SchemaFactory.createForClass(Board);
