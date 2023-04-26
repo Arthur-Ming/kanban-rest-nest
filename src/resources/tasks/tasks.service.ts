@@ -1,26 +1,82 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Board } from '../boards/schemas/board.schema';
+import { Column } from '../columns/schemas/column.schema';
+import { Task } from './schemas/task.schema';
+import { Model } from 'mongoose';
+import { FindAllDto } from './dto/find-all.dto';
+import { FindOneDto } from './dto/find-one.dto';
 
 @Injectable()
 export class TasksService {
-  create(createTaskDto: CreateTaskDto) {
-    return 'This action adds a new task';
+  constructor(
+    @InjectModel(Column.name) private columnModel: Model<Column>,
+    @InjectModel(Task.name) private taskModel: Model<Task>
+  ) {}
+
+  async create({ boardId, columnId }: FindAllDto, createTaskDto: CreateTaskDto) {
+    const column = await this.columnModel.findOne({ _id: columnId, boardId });
+
+    if (!column) {
+      throw new NotFoundException();
+    }
+
+    const task = await this.taskModel.create({
+      boardId,
+      columnId,
+      ...createTaskDto,
+    });
+
+    await column.updateOne({ $push: { tasks: task } });
+
+    return task;
   }
 
-  findAll() {
-    return `This action returns all tasks`;
+  async findAll({ boardId, columnId }: FindAllDto) {
+    return await this.taskModel.find({ boardId, columnId });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} task`;
+  async findOne({ boardId, columnId, taskId }: FindOneDto) {
+    const task = await this.taskModel.findOne({ _id: taskId, boardId, columnId });
+
+    if (!task) {
+      throw new NotFoundException();
+    }
+
+    return task;
   }
 
-  update(id: number, updateTaskDto: UpdateTaskDto) {
-    return `This action updates a #${id} task`;
+  async update({ boardId, columnId, taskId }: FindOneDto, updateTaskDto: UpdateTaskDto) {
+    const task = await this.taskModel.findOneAndUpdate(
+      { _id: taskId, boardId, columnId },
+      updateTaskDto,
+      {
+        new: true,
+      }
+    );
+
+    if (!task) {
+      throw new NotFoundException();
+    }
+    return task;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} task`;
+  async remove({ boardId, columnId, taskId }: FindOneDto) {
+    const [column, task] = await Promise.all([
+      this.columnModel.findOneAndUpdate({ _id: columnId, boardId }, { $pull: { tasks: taskId } }),
+      this.taskModel.findOneAndDelete({ _id: taskId, boardId, columnId }),
+    ]);
+
+    if (!column) {
+      throw new NotFoundException();
+    }
+
+    if (!task) {
+      throw new NotFoundException();
+    }
+
+    return task;
   }
 }
