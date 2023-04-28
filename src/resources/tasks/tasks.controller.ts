@@ -24,12 +24,12 @@ export class TasksController {
     return this.tasksService.findOne(findOneDto);
   }
 
-  @Put(':id')
+  @Put(':taskId')
   update(@Param() findOneDto: FindOneDto, @Body() updateTaskDto: UpdateTaskDto) {
     return this.tasksService.update(findOneDto, updateTaskDto);
   }
 
-  @Delete(':id')
+  @Delete(':taskId')
   remove(@Param() findOneDto: FindOneDto) {
     return this.tasksService.remove(findOneDto);
   }

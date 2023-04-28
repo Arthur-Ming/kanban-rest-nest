@@ -3,4 +3,8 @@ export default () => ({
   mongodb: {
     uri: process.env.MONGO_CONNECTION_URL,
   },
+  jwt: {
+    secret: process.env.JWT_SECRET_KEY || 'secret',
+    expiresIn: '24h',
+  },
 });
