@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Board, BoardSchema } from './schemas/board.schema';
 import { Column, ColumnSchema } from '../columns/schemas/column.schema';
 import { Task, TaskSchema } from '../tasks/schemas/task.schema';
+import { FilesService } from '../files/files.service';
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { Task, TaskSchema } from '../tasks/schemas/task.schema';
     ]),
   ],
   controllers: [BoardsController],
-  providers: [BoardsService],
+  providers: [BoardsService, FilesService],
 })
 export class BoardsModule {}

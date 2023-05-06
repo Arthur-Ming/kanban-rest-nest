@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from '../users/schemas/user.schema';
-import { Model } from 'mongoose';
+import { Model, ObjectId } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
@@ -25,15 +25,15 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const payload = { email: user.email };
+    const payload = { id: user.id };
 
     return {
       token: await this.jwtService.signAsync(payload),
     };
   }
 
-  async getUser({ email }: { email: string }) {
-    const user = await this.userModel.findOne({ email });
+  async getUser({ id }: { id: ObjectId }) {
+    const user = await this.userModel.findById(id);
     return user;
   }
 }

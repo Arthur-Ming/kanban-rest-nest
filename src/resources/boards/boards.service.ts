@@ -7,13 +7,15 @@ import { Board } from './schemas/board.schema';
 import { FindOneDto } from './dto/find-one.dto';
 import { Column } from '../columns/schemas/column.schema';
 import { Task } from '../tasks/schemas/task.schema';
+import { FilesService } from '../files/files.service';
 
 @Injectable()
 export class BoardsService {
   constructor(
     @InjectModel(Board.name) private boardModel: Model<Board>,
     @InjectModel(Column.name) private columnModel: Model<Column>,
-    @InjectModel(Task.name) private taskModel: Model<Task>
+    @InjectModel(Task.name) private taskModel: Model<Task>,
+    private filesService: FilesService
   ) {}
 
   async create(createBoardDto: CreateBoardDto) {
@@ -48,15 +50,22 @@ export class BoardsService {
   }
 
   async remove({ id }: FindOneDto) {
-    const [board] = await Promise.all([
+    const [board, , tasks] = await Promise.all([
       this.boardModel.findByIdAndDelete(id),
       this.columnModel.deleteMany({ boardId: id }),
-      this.taskModel.deleteMany({ boardId: id }),
+      this.taskModel.find({ boardId: id }),
     ]);
 
     if (!board) {
       throw new NotFoundException();
     }
+
+    const files = tasks.map(({ files }) => files).flat();
+
+    await Promise.all([
+      this.taskModel.deleteMany({ boardId: id }),
+      this.filesService.remove(files),
+    ]);
 
     return board;
   }

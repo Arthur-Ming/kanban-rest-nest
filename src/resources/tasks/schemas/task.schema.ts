@@ -15,6 +15,9 @@ export class Task {
 
   @Prop({ default: '' })
   description: string;
+
+  @Prop({ default: [] })
+  files: string[];
 }
 
 export const TaskSchema = SchemaFactory.createForClass(Task);
