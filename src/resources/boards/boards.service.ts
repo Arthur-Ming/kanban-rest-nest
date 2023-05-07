@@ -8,6 +8,8 @@ import { FindOneDto } from './dto/find-one.dto';
 import { Column } from '../columns/schemas/column.schema';
 import { Task } from '../tasks/schemas/task.schema';
 import { FilesService } from '../files/files.service';
+import { UpdateColumnsOrderDto } from './dto/update-columns-order.dto';
+import { UpdateTasksOrderDto } from './dto/update-tasks-order.dto';
 
 @Injectable()
 export class BoardsService {
@@ -47,6 +49,49 @@ export class BoardsService {
       throw new NotFoundException();
     }
     return board;
+  }
+
+  async updateColumnsOrder({ id }: FindOneDto, updateColumnsOrderDto: UpdateColumnsOrderDto) {
+    const board = await this.boardModel.findOne({ _id: id }, { columns: 1 });
+
+    if (!board) {
+      throw new NotFoundException();
+    }
+
+    const { source, destination } = updateColumnsOrderDto;
+
+    const sourceColumn = board.columns[source.index];
+    board.columns.splice(source.index, 1);
+    board.columns.splice(destination.index, 0, sourceColumn);
+
+    await board.save();
+    return board;
+  }
+  async updateTasksOrder({ id }: FindOneDto, updateTasksOrderDto: UpdateTasksOrderDto) {
+    const { source, destination } = updateTasksOrderDto;
+    const sourceColumn = await this.columnModel.findOne({ _id: source.columnId }, { tasks: 1 });
+    const movedTaskId = sourceColumn.tasks[source.index];
+    if (source.columnId === destination.columnId) {
+      sourceColumn.tasks.splice(source.index, 1);
+      sourceColumn.tasks.splice(destination.index, 0, movedTaskId);
+      await sourceColumn.save();
+      return sourceColumn;
+    }
+    if (source.columnId !== destination.columnId) {
+      const destinationColumn = await this.columnModel.findOne(
+        { _id: destination.columnId },
+        { tasks: 1 }
+      );
+      sourceColumn.tasks.splice(source.index, 1);
+      destinationColumn.tasks.splice(destination.index, 0, movedTaskId);
+      await this.taskModel.findByIdAndUpdate(movedTaskId, {
+        $set: { columnId: destination.columnId },
+      });
+      await sourceColumn.save();
+      await destinationColumn.save();
+
+      return sourceColumn;
+    }
   }
 
   async remove({ id }: FindOneDto) {
